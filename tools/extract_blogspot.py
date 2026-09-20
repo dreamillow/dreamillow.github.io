@@ -51,6 +51,10 @@ class PostBodyExtractor(HTMLParser):
             if self.stack:
                 self.stack[-1][1] += "\n"
             return
+        if tag == "img":
+            src = dict(attrs).get("src", "")
+            self.blocks.append(("img", src))
+            return
         if tag in BLOCK:
             self.stack.append([tag, ""])
 

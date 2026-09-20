@@ -138,6 +138,47 @@ a:focus-visible, button:focus-visible {
 
 .prose li { margin-bottom: 0.4rem; }
 
+.table-wrap {
+  overflow-x: auto;
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+
+.table-wrap thead th {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.table-wrap tbody th {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.table-wrap tbody td {
+  color: var(--muted);
+}
+
+.table-wrap tbody tr:last-child th,
+.table-wrap tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* ---------- footer ---------- */
 
 .footer {

@@ -45,6 +45,69 @@ PAGES = [
     ("tools/fixtures/blogger-terms.html", "terms.html", "Terms of Service"),
 ]
 
+# Country -> minimum age, transcribed by hand from the "age restrictions by
+# country" table image in the Blogger source (see
+# tools/fixtures/blogger-privacy-ages.png). Order matches the source image.
+AGE_TABLE_ROWS = [
+    ("Austria", "14"),
+    ("Belgium", "13"),
+    ("Bulgaria", "13"),
+    ("Croatia", "13"),
+    ("Republic of Cyprus", "13"),
+    ("Czech Republic", "13"),
+    ("Denmark", "13"),
+    ("Estonia", "13"),
+    ("Finland", "15"),
+    ("France", "16"),
+    ("Germany", "16"),
+    ("Greece", "13"),
+    ("Hungary", "16"),
+    ("Ireland", "13"),
+    ("Italy", "13"),
+    ("Latvia", "13"),
+    ("Lithuania", "16"),
+    ("Luxembourg", "16"),
+    ("Malta", "13"),
+    ("Netherlands", "16"),
+    ("Poland", "13"),
+    ("Portugal", "13"),
+    ("Romania", "13"),
+    ("Slovakia", "16"),
+    ("Slovenia", "13"),
+    ("Spain", "13"),
+    ("Sweden", "13"),
+    ("United Kingdom", "13"),
+    ("Rest of the world (excluding Korea)", "13"),
+]
+
+
+def _render_age_table():
+    rows = "\n".join(
+        f"      <tr><th scope=\"row\">{html.escape(country)}</th><td>{html.escape(age)}</td></tr>"
+        for country, age in AGE_TABLE_ROWS
+    )
+    return (
+        '<div class="table-wrap">\n'
+        "  <table>\n"
+        "    <thead>\n"
+        "      <tr><th scope=\"col\">Country</th>"
+        "<th scope=\"col\">Age you must be to play our games and use our Services</th></tr>\n"
+        "    </thead>\n"
+        "    <tbody>\n"
+        f"{rows}\n"
+        "    </tbody>\n"
+        "  </table>\n"
+        "</div>"
+    )
+
+
+# Known image sources from the Blogger fixtures, mapped to the transcribed
+# HTML that should be rendered in their place. An image whose src is not
+# listed here fails the build loudly instead of silently vanishing.
+IMAGE_BLOCKS = {
+    "https://k.kakaocdn.net/dn/pHrj1/btqDUFKPv1L/NDToHXKvWlc8bDj4SvQX7k/img.png": _render_age_table,
+}
+
 
 def render(blocks):
     lines = []
@@ -52,6 +115,16 @@ def render(blocks):
     first_heading = True
 
     for kind, text in blocks:
+        if kind == "img":
+            if in_list:
+                lines.append("</ul>")
+                in_list = False
+            renderer = IMAGE_BLOCKS.get(text)
+            if renderer is None:
+                raise Exception(f"unhandled image in legal source: {text}")
+            lines.append(renderer())
+            continue
+
         escaped = html.escape(text)
 
         if kind == "li":

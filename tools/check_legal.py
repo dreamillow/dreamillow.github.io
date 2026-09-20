@@ -35,12 +35,18 @@ def reference_words(fixture):
 
 
 class ProseParser(HTMLParser):
-    """Collect the text inside <main class="prose">."""
+    """Collect the text inside <main class="prose">, excluding <table> content.
+
+    Tables hold transcribed image content (e.g. the age-restriction table),
+    which never existed as text in the Blogger source, so it is out of scope
+    for this verbatim-text check.
+    """
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.inside = False
         self.depth = 0
+        self.table_depth = 0
         self.text = []
 
     def handle_starttag(self, tag, attrs):
@@ -50,8 +56,12 @@ class ProseParser(HTMLParser):
             return
         if self.inside and tag == "main":
             self.depth += 1
+        if self.inside and tag == "table":
+            self.table_depth += 1
 
     def handle_endtag(self, tag):
+        if self.inside and tag == "table" and self.table_depth:
+            self.table_depth -= 1
         if self.inside and tag == "main":
             if self.depth == 0:
                 self.inside = False
@@ -59,7 +69,7 @@ class ProseParser(HTMLParser):
                 self.depth -= 1
 
     def handle_data(self, data):
-        if self.inside:
+        if self.inside and not self.table_depth:
             self.text.append(data)
 
 
