@@ -8,6 +8,7 @@ from html.parser import HTMLParser
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from extract_blogspot import extract, normalize  # noqa: E402
+from build_legal import PAGES as BUILD_PAGES, render_page  # noqa: E402
 
 HANGUL = re.compile(r"[가-힣]")
 SKIP_TAGS = ("script", "style", "svg", "button", "noscript", "form")
@@ -79,6 +80,30 @@ def prose_words(page):
     return normalize(" ".join(parser.text).replace("\n", " ")).split()
 
 
+def check_regeneration(errors):
+    """Confirm the committed pages are exactly what build_legal.py produces.
+
+    Renders each page in memory via build_legal's own functions and compares
+    against the committed bytes on disk -- never writes to the repository.
+    """
+    for fixture, output, title in BUILD_PAGES:
+        output_path = pathlib.Path(output)
+        if not output_path.exists():
+            errors.append(f"{output} does not exist")
+            continue
+        try:
+            rendered = render_page(fixture, title)
+        except Exception as exc:
+            errors.append(f"{output}: could not regenerate from {fixture}: {exc}")
+            continue
+        committed = output_path.read_text(encoding="utf-8")
+        if rendered != committed:
+            errors.append(
+                f"{output}: does not match output of build_legal.py -- "
+                "regenerate with `python3 tools/build_legal.py`"
+            )
+
+
 def main():
     errors = []
     for page, fixture in PAIRS:
@@ -107,6 +132,8 @@ def main():
         blocks = extract(fixture)
         if not blocks:
             errors.append(f"{fixture}: extractor returned no blocks")
+
+    check_regeneration(errors)
 
     for error in errors:
         print(f"FAIL: {error}")

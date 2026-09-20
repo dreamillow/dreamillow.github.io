@@ -78,14 +78,20 @@ def check_page(path, errors):
     return parser
 
 
-def check_links(pages, errors):
+def check_links(pages, errors, root):
     for path, parser in pages.items():
         for href in parser.links:
             if href.startswith(ALLOWED_SCHEMES):
                 continue
             target, _, fragment = href.partition("#")
             if target:
-                destination = path.parent / target
+                if target.startswith("/"):
+                    # Root-absolute path: resolve against the repository
+                    # root, not the filesystem root. (pathlib discards the
+                    # left operand of `/` when the right side is absolute.)
+                    destination = root / target.lstrip("/")
+                else:
+                    destination = path.parent / target
                 if not destination.exists():
                     errors.append(f"{path.name}: link target missing: {href}")
                     continue
@@ -111,12 +117,35 @@ def main():
     for path in html_files:
         pages[path.resolve()] = check_page(path, errors)
 
-    check_links(pages, errors)
+    check_links(pages, errors, root)
 
     css = pathlib.Path("assets/style.css")
     if css.exists():
         text = css.read_text(encoding="utf-8")
-        if ".reveal" in text and not re.search(r"\.js\s+\.reveal", text):
+        rule_re = re.compile(r"([^{}]+)\{([^{}]*)\}")
+        hidden_re = re.compile(
+            r"(?:^|;)\s*(?:opacity\s*:\s*0(?:\.0+)?\b"
+            r"|display\s*:\s*none\b"
+            r"|visibility\s*:\s*hidden\b)",
+            re.I,
+        )
+        found_scoped_hide = False
+        for selector_text, declarations in rule_re.findall(text):
+            for selector in selector_text.split(","):
+                selector = selector.strip()
+                if ".reveal" not in selector:
+                    continue
+                if not hidden_re.search(declarations):
+                    continue
+                if re.search(r"\.js\b.*\.reveal", selector):
+                    found_scoped_hide = True
+                else:
+                    errors.append(
+                        f"assets/style.css: rule '{selector} {{ {declarations.strip()} }}' "
+                        "hides .reveal without being scoped under .js, which would blank "
+                        "the page's content for visitors without JavaScript"
+                    )
+        if ".reveal" in text and not found_scoped_hide:
             errors.append(
                 "assets/style.css: .reveal must only be hidden under the .js class "
                 "so the page stays readable without JavaScript"

@@ -12,15 +12,15 @@ TEMPLATE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} &mdash; Dreamillow</title>
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 
 <header class="nav">
-  <a class="wordmark" href="index.html">Dreamillow</a>
-  <nav>
-    <a href="index.html#about">About</a>
-    <a href="index.html#contact">Contact</a>
+  <a class="wordmark" href="/index.html">Dreamillow</a>
+  <nav aria-label="Main">
+    <a href="/index.html#about">About</a>
+    <a href="/index.html#contact">Contact</a>
   </nav>
 </header>
 
@@ -30,9 +30,9 @@ TEMPLATE = """<!DOCTYPE html>
 
 <footer class="footer">
   <p>&copy; Dreamillow</p>
-  <nav>
-    <a href="privacy.html">Privacy Policy</a>
-    <a href="terms.html">Terms of Service</a>
+  <nav aria-label="Legal">
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/terms.html">Terms of Service</a>
   </nav>
 </footer>
 
@@ -87,8 +87,10 @@ def _render_age_table():
         for country, age in AGE_TABLE_ROWS
     )
     return (
-        '<div class="table-wrap">\n'
+        '<div class="table-wrap" tabindex="0" role="region" '
+        'aria-label="Minimum age by country">\n'
         "  <table>\n"
+        "    <caption>Minimum age to play our games and use our Services, by country</caption>\n"
         "    <thead>\n"
         "      <tr><th scope=\"col\">Country</th>"
         "<th scope=\"col\">Age you must be to play our games and use our Services</th></tr>\n"
@@ -151,15 +153,23 @@ def render(blocks):
     return "\n".join(lines)
 
 
+def render_page(fixture, title):
+    """Render one legal page's full HTML text in memory, without writing it."""
+    blocks = extract(fixture)
+    if not blocks:
+        raise Exception(f"no blocks extracted from {fixture}")
+    return TEMPLATE.format(title=title, body=render(blocks))
+
+
 def main():
     for fixture, output, title in PAGES:
-        blocks = extract(fixture)
-        if not blocks:
-            print(f"FAIL: no blocks extracted from {fixture}")
+        try:
+            page = render_page(fixture, title)
+        except Exception as exc:
+            print(f"FAIL: {exc}")
             return 1
-        page = TEMPLATE.format(title=title, body=render(blocks))
         pathlib.Path(output).write_text(page, encoding="utf-8")
-        print(f"wrote {output} from {len(blocks)} blocks")
+        print(f"wrote {output} from {fixture}")
     return 0
 
 
