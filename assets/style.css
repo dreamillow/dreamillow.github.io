@@ -305,7 +305,7 @@ img { max-width: 100%; height: auto; }
 
 .section p { margin: 0 0 1rem; }
 
-.mail-button {
+.pill-button {
   display: inline-block;
   margin-top: 0.75rem;
   padding: 0.8rem 2rem;
@@ -320,7 +320,7 @@ img { max-width: 100%; height: auto; }
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-.mail-button:hover {
+.pill-button:hover {
   background: var(--amber);
   color: var(--deep);
 }

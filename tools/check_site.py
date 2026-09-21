@@ -59,11 +59,24 @@ def check_page(path, errors):
     if not parser.title.strip():
         errors.append(f"{name}: missing non-empty <title>")
 
-    # no external resources
-    for value in parser.sources + parser.links:
+    # No external resource loads. This is the rule that keeps the page free of
+    # third-party requests: stylesheets, scripts, fonts and images must all be
+    # served from this origin.
+    for value in parser.sources:
         if value.startswith(("http://", "https://", "//")):
-            errors.append(f"{name}: external reference not allowed: {value}")
+            errors.append(f"{name}: external resource not allowed: {value}")
         elif ":" in value.split("/")[0] and not value.startswith(ALLOWED_SCHEMES):
+            errors.append(f"{name}: unexpected URL scheme: {value}")
+
+    # Hyperlinks are a different matter — they fetch nothing until a visitor
+    # clicks them, so linking out (to a store page, say) is allowed. Require
+    # https so we never hand a visitor an insecure hop.
+    for value in parser.links:
+        if value.startswith("https://") or value.startswith(ALLOWED_SCHEMES):
+            continue
+        if value.startswith(("http://", "//")):
+            errors.append(f"{name}: outbound link must use https: {value}")
+        elif ":" in value.split("/")[0]:
             errors.append(f"{name}: unexpected URL scheme: {value}")
 
     # heading levels must not skip
@@ -81,7 +94,9 @@ def check_page(path, errors):
 def check_links(pages, errors, root):
     for path, parser in pages.items():
         for href in parser.links:
-            if href.startswith(ALLOWED_SCHEMES):
+            # Anything with a scheme points off this filesystem; the loop above
+            # has already judged whether it is allowed.
+            if "://" in href or href.startswith(ALLOWED_SCHEMES):
                 continue
             target, _, fragment = href.partition("#")
             if target:
