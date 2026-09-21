@@ -38,7 +38,9 @@
 
 html {
   scroll-behavior: smooth;
-  background: var(--night);
+  /* Matches the ground, which is what shows through on overscroll and below
+     the body box. The hero paints its own night sky on top. */
+  background: var(--deep);
 }
 
 body {
@@ -187,6 +189,8 @@ img { max-width: 100%; height: auto; }
 
 .hero-inner {
   position: relative;
+  width: 100%;
+  max-width: var(--measure);
   text-align: center;
   padding: 0 1.5rem;
   margin-bottom: 12vh;
@@ -212,18 +216,32 @@ img { max-width: 100%; height: auto; }
 .hero-logo {
   width: min(62vw, 268px);
   height: auto;
-  filter: drop-shadow(0 12px 32px rgba(20, 13, 30, 0.45));
+  /* The logo's wordmark is dark brown, so it needs a light halo to separate
+     from the night sky. The dark shadow underneath keeps it grounded. */
+  filter:
+    drop-shadow(0 0 9px rgba(253, 243, 230, 0.3))
+    drop-shadow(0 0 28px rgba(248, 197, 74, 0.2))
+    drop-shadow(0 12px 32px rgba(20, 13, 30, 0.45));
 }
 
 .tagline {
-  margin: 1.25rem 0 0;
-  font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+  margin: 1.5rem auto 0;
+  max-width: 100%;
+  font-size: clamp(0.8rem, 2.6vw, 1.05rem);
   font-weight: 600;
   letter-spacing: 0.34em;
   text-indent: 0.34em;
   text-transform: uppercase;
   color: var(--sand);
   text-shadow: 0 2px 14px rgba(20, 13, 30, 0.6);
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 30rem) {
+  .tagline {
+    letter-spacing: 0.18em;
+    text-indent: 0.18em;
+  }
 }
 
 .scroll-cue {
