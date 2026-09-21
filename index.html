@@ -5,12 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dreamillow</title>
 <meta name="description" content="Dreamillow is an independent game studio developing mobile games.">
+<meta name="theme-color" content="#140d1e">
+<link rel="icon" href="/assets/icon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/dreamillow.png">
+<link rel="preload" href="/assets/fonts/quicksand-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 
 <header class="nav">
-  <a class="wordmark" href="/index.html">Dreamillow</a>
+  <a class="wordmark" href="/index.html">
+    <img src="/assets/icon.png" alt="" width="28" height="28">
+    <span>Dreamillow</span>
+  </a>
   <nav aria-label="Main">
     <a href="#about">About</a>
     <a href="#contact">Contact</a>
@@ -19,21 +26,52 @@
 
 <main>
   <section class="hero">
-    <h1>Dreamillow</h1>
-    <p>An independent game studio.</p>
+    <div class="sky" aria-hidden="true"></div>
+
+    <div class="dunes" aria-hidden="true">
+      <div class="dune dune-far" data-speed="0.10">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" focusable="false">
+          <path d="M0,168 C220,104 470,198 716,166 C962,134 1206,64 1440,118 L1440,320 L0,320 Z"/>
+        </svg>
+      </div>
+      <div class="dune dune-mid" data-speed="0.20">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" focusable="false">
+          <path d="M0,224 C186,172 424,252 664,222 C904,192 1148,142 1440,192 L1440,320 L0,320 Z"/>
+        </svg>
+      </div>
+      <div class="dune dune-near" data-speed="0.34">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" focusable="false">
+          <path d="M0,272 C204,242 402,292 702,266 C1002,240 1222,276 1440,252 L1440,320 L0,320 Z"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="hero-inner">
+      <h1><img class="hero-logo" src="/assets/dreamillow.png" alt="Dreamillow" width="512" height="512"></h1>
+      <p class="tagline">An independent game studio</p>
+    </div>
+
+    <a class="scroll-cue" href="#about" aria-label="Scroll to About">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
   </section>
 
-  <section class="section reveal" id="about">
-    <h2>About</h2>
-    <p>Dreamillow is an independent game studio developing mobile games.</p>
-    <p>We publish our titles on Google Play and the App Store for players around the world.</p>
-  </section>
+  <div class="ground">
+    <section class="section reveal" id="about">
+      <h2>About</h2>
+      <p>Dreamillow is an independent game studio developing mobile games.</p>
+      <p>We publish our titles on Google Play and the App Store for players around the world.</p>
+    </section>
 
-  <section class="section reveal" id="contact">
-    <h2>Contact</h2>
-    <p>Questions about our games, or about this site? Write to us.</p>
-    <p><a class="mail-button" href="mailto:dreamillowgames@gmail.com">dreamillowgames@gmail.com</a></p>
-  </section>
+    <section class="section reveal" id="contact">
+      <h2>Contact</h2>
+      <p>Questions about our games, or about this site? We would like to hear from you.</p>
+      <p><a class="mail-button" href="mailto:dreamillowgames@gmail.com">Contact us</a></p>
+    </section>
+  </div>
 </main>
 
 <footer class="footer">
