@@ -331,7 +331,19 @@ img { max-width: 100%; height: auto; }
   gap: 0.75rem;
 }
 
-.store-links .pill-button { margin-top: 0; }
+.store-links .pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0;
+}
+
+.pill-icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  fill: currentColor;
+}
 
 /* ---------- legal pages ---------- */
 
