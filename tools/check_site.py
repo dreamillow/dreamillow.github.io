@@ -122,7 +122,12 @@ def check_links(pages, errors, root):
 
 def main():
     root = pathlib.Path(".")
-    html_files = sorted(root.glob("*.html"))
+    # Search Console verification files (google<token>.html) must stay exactly
+    # as Google issued them, so they are not pages and are not checked as such.
+    html_files = sorted(
+        path for path in root.glob("*.html")
+        if not re.fullmatch(r"google[0-9a-f]+\.html", path.name)
+    )
     if not html_files:
         print("FAIL: no HTML files found in repository root")
         return 1
