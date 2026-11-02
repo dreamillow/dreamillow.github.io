@@ -40,7 +40,7 @@ TEMPLATE = """<!DOCTYPE html>
 </main>
 
 <footer class="footer">
-  <p>&copy; Dreamillow</p>
+  <p>&copy; 2026 Dreamillow</p>
   <nav aria-label="Legal">
     <a href="/privacy.html">Privacy Policy</a>
     <a href="/terms.html">Terms of Service</a>
