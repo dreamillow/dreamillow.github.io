@@ -17,6 +17,9 @@ TEMPLATE = """<!DOCTYPE html>
 <link rel="apple-touch-icon" href="/assets/dreamillow.png">
 <link rel="preload" href="/assets/fonts/quicksand-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/style.css">
+<link rel="alternate" hreflang="en" href="https://dreamillow.github.io/{page}">
+<link rel="alternate" hreflang="ko" href="https://dreamillow.github.io/ko/{page}">
+<link rel="alternate" hreflang="x-default" href="https://dreamillow.github.io/{page}">
 </head>
 <body>
 
@@ -28,6 +31,7 @@ TEMPLATE = """<!DOCTYPE html>
   <nav aria-label="Main">
     <a href="/index.html#about">About</a>
     <a href="/index.html#contact">Contact</a>
+    <a href="/ko/{page}" hreflang="ko" lang="ko">한국어</a>
   </nav>
 </header>
 
@@ -51,6 +55,12 @@ PAGES = [
     ("tools/fixtures/blogger-privacy.html", "privacy.html", "Privacy Policy"),
     ("tools/fixtures/blogger-terms.html", "terms.html", "Terms of Service"),
 ]
+
+# Deliberate departures from the Blogger source, approved by the site owner.
+# The fixtures stay as the untouched snapshot; everything else remains verbatim.
+CORRECTIONS = {
+    "[DEVELOPER NAME]": "Dreamillow",
+}
 
 # Country -> minimum age, transcribed by hand from the "age restrictions by
 # country" table image in the Blogger source (see
@@ -160,18 +170,24 @@ def render(blocks):
     return "\n".join(lines)
 
 
-def render_page(fixture, title):
+def apply_corrections(text):
+    for wrong, right in CORRECTIONS.items():
+        text = text.replace(wrong, right)
+    return text
+
+
+def render_page(fixture, output, title):
     """Render one legal page's full HTML text in memory, without writing it."""
-    blocks = extract(fixture)
+    blocks = [(kind, apply_corrections(text)) for kind, text in extract(fixture)]
     if not blocks:
         raise Exception(f"no blocks extracted from {fixture}")
-    return TEMPLATE.format(title=title, body=render(blocks))
+    return TEMPLATE.format(title=title, page=output, body=render(blocks))
 
 
 def main():
     for fixture, output, title in PAGES:
         try:
-            page = render_page(fixture, title)
+            page = render_page(fixture, output, title)
         except Exception as exc:
             print(f"FAIL: {exc}")
             return 1

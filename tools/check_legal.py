@@ -1,4 +1,5 @@
 """Verify the generated legal pages carry the Blogger text verbatim."""
+import collections
 import difflib
 import html
 import pathlib
@@ -8,7 +9,7 @@ from html.parser import HTMLParser
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from extract_blogspot import extract, normalize  # noqa: E402
-from build_legal import PAGES as BUILD_PAGES, render_page  # noqa: E402
+from build_legal import PAGES as BUILD_PAGES, apply_corrections, render_page  # noqa: E402
 
 HANGUL = re.compile(r"[가-힣]")
 SKIP_TAGS = ("script", "style", "svg", "button", "noscript", "form")
@@ -17,6 +18,14 @@ PAIRS = [
     ("privacy.html", "tools/fixtures/blogger-privacy.html"),
     ("terms.html", "tools/fixtures/blogger-terms.html"),
 ]
+
+TRANSLATIONS = [
+    ("privacy.html", "ko/privacy.html"),
+    ("terms.html", "ko/terms.html"),
+]
+
+# Text a translation must carry over unchanged: web addresses and mail addresses.
+LITERAL = re.compile(r"https?://[^\s(),]+|[\w.-]+@[\w-]+\.com")
 
 
 def reference_words(fixture):
@@ -27,7 +36,7 @@ def reference_words(fixture):
     body = source[start:]
     for tag in SKIP_TAGS:
         body = re.sub(rf"<{tag}\b.*?</{tag}>", " ", body, flags=re.S | re.I)
-    text = html.unescape(re.sub(r"<[^>]+>", " ", body))
+    text = apply_corrections(html.unescape(re.sub(r"<[^>]+>", " ", body)))
     words = normalize(text.replace("\n", " ")).split()
     for index, word in enumerate(words):
         if index > 50 and HANGUL.search(word):
@@ -49,12 +58,16 @@ class ProseParser(HTMLParser):
         self.depth = 0
         self.table_depth = 0
         self.text = []
+        self.tags = []
+        self.table_numbers = []
 
     def handle_starttag(self, tag, attrs):
         if tag == "main" and "prose" in dict(attrs).get("class", ""):
             self.inside = True
             self.depth = 0
             return
+        if self.inside:
+            self.tags.append(tag)
         if self.inside and tag == "main":
             self.depth += 1
         if self.inside and tag == "table":
@@ -72,12 +85,36 @@ class ProseParser(HTMLParser):
     def handle_data(self, data):
         if self.inside and not self.table_depth:
             self.text.append(data)
+        elif self.table_depth and data.strip().isdigit():
+            self.table_numbers.append(data.strip())
+
+
+def parse_prose(page):
+    parser = ProseParser()
+    parser.feed(pathlib.Path(page).read_text(encoding="utf-8"))
+    return parser
 
 
 def prose_words(page):
-    parser = ProseParser()
-    parser.feed(pathlib.Path(page).read_text(encoding="utf-8"))
-    return normalize(" ".join(parser.text).replace("\n", " ")).split()
+    return normalize(" ".join(parse_prose(page).text).replace("\n", " ")).split()
+
+
+def check_translations(errors):
+    """A translation cannot be proofread by machine, but dropped or merged
+    paragraphs, altered addresses and changed ages can all be caught."""
+    for page, translation in TRANSLATIONS:
+        if not pathlib.Path(translation).exists():
+            errors.append(f"{translation} does not exist")
+            continue
+        source = parse_prose(page)
+        target = parse_prose(translation)
+        if source.tags != target.tags:
+            errors.append(f"{translation}: block structure differs from {page}")
+        if source.table_numbers != target.table_numbers:
+            errors.append(f"{translation}: table numbers differ from {page}")
+        literals = [collections.Counter(LITERAL.findall(" ".join(p.text))) for p in (source, target)]
+        if literals[0] != literals[1]:
+            errors.append(f"{translation}: addresses differ from {page}: only in source {literals[0] - literals[1]}, only in translation {literals[1] - literals[0]}")
 
 
 def check_regeneration(errors):
@@ -92,7 +129,7 @@ def check_regeneration(errors):
             errors.append(f"{output} does not exist")
             continue
         try:
-            rendered = render_page(fixture, title)
+            rendered = render_page(fixture, output, title)
         except Exception as exc:
             errors.append(f"{output}: could not regenerate from {fixture}: {exc}")
             continue
@@ -134,6 +171,7 @@ def main():
             errors.append(f"{fixture}: extractor returned no blocks")
 
     check_regeneration(errors)
+    check_translations(errors)
 
     for error in errors:
         print(f"FAIL: {error}")

@@ -435,6 +435,26 @@ img { max-width: 100%; height: auto; }
 
 .footer nav a:hover { text-decoration: underline; }
 
+/* ---------- korean ----------
+   Quicksand has no Hangul, so Hangul falls through to the system font while
+   digits and latin stay in Quicksand. The wide tracking suits latin capitals
+   only; Hangul needs far less of it. */
+
+body:lang(ko) {
+  font-family: "Quicksand", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Malgun Gothic", "Noto Sans KR", Roboto, sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.tagline:lang(ko) {
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+}
+
+.section h2:lang(ko),
+.pill-button:lang(ko) { letter-spacing: 0.04em; }
+
 /* ---------- scroll reveal ----------
    Hidden only when main.js has run, so no-JS visitors still see everything. */
 

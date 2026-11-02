@@ -5,6 +5,7 @@ import sys
 from html.parser import HTMLParser
 
 ALLOWED_SCHEMES = ("mailto:",)
+SITE = "https://dreamillow.github.io/"
 
 
 class PageParser(HTMLParser):
@@ -12,6 +13,7 @@ class PageParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.links = []       # href values
         self.sources = []     # src / stylesheet href values
+        self.alternates = {}  # hreflang -> absolute URL
         self.ids = set()
         self.headings = []    # heading levels in document order
         self.lang = None
@@ -31,7 +33,10 @@ class PageParser(HTMLParser):
             self._in_title = True
         if tag == "a" and "href" in attrs:
             self.links.append(attrs["href"])
-        if tag == "link" and "href" in attrs:
+        if tag == "link" and attrs.get("rel") == "alternate":
+            # Fetches nothing, and hreflang URLs must be absolute by definition.
+            self.alternates[attrs.get("hreflang")] = attrs.get("href")
+        elif tag == "link" and "href" in attrs:
             self.sources.append(attrs["href"])
         if tag in ("script", "img", "iframe") and "src" in attrs:
             self.sources.append(attrs["src"])
@@ -50,10 +55,11 @@ class PageParser(HTMLParser):
 def check_page(path, errors):
     parser = PageParser()
     parser.feed(path.read_text(encoding="utf-8"))
-    name = path.name
+    name = path.as_posix()
 
-    if parser.lang != "en":
-        errors.append(f"{name}: <html lang> must be 'en', got {parser.lang!r}")
+    expected_lang = "ko" if path.parent.name == "ko" else "en"
+    if parser.lang != expected_lang:
+        errors.append(f"{name}: <html lang> must be {expected_lang!r}, got {parser.lang!r}")
     if not parser.has_viewport:
         errors.append(f"{name}: missing viewport meta tag")
     if not parser.title.strip():
@@ -91,8 +97,34 @@ def check_page(path, errors):
     return parser
 
 
+def page_url(relative):
+    url = SITE + relative.as_posix()
+    return url[: -len("index.html")] if url.endswith("index.html") else url
+
+
+def check_translations(pages, errors, root):
+    """Every page except the 404 exists in both languages and says so."""
+    for path, parser in pages.items():
+        relative = path.relative_to(root.resolve())
+        if relative.name == "404.html":
+            continue
+        english = pathlib.Path(relative.name)
+        korean = pathlib.Path("ko") / relative.name
+        for counterpart in (english, korean):
+            if not (root / counterpart).exists():
+                errors.append(f"{relative.as_posix()}: translation missing: {counterpart.as_posix()}")
+        expected = {
+            "en": page_url(english),
+            "ko": page_url(korean),
+            "x-default": page_url(english),
+        }
+        if parser.alternates != expected:
+            errors.append(f"{relative.as_posix()}: hreflang links must be {expected}, got {parser.alternates}")
+
+
 def check_links(pages, errors, root):
     for path, parser in pages.items():
+        name = path.relative_to(root.resolve()).as_posix()
         for href in parser.links:
             # Anything with a scheme points off this filesystem; the loop above
             # has already judged whether it is allowed.
@@ -108,16 +140,16 @@ def check_links(pages, errors, root):
                 else:
                     destination = path.parent / target
                 if not destination.exists():
-                    errors.append(f"{path.name}: link target missing: {href}")
+                    errors.append(f"{name}: link target missing: {href}")
                     continue
             else:
                 destination = path
             if fragment:
                 target_parser = pages.get(destination.resolve())
                 if target_parser is None:
-                    errors.append(f"{path.name}: cannot resolve anchor page for {href}")
+                    errors.append(f"{name}: cannot resolve anchor page for {href}")
                 elif fragment not in target_parser.ids:
-                    errors.append(f"{path.name}: anchor #{fragment} not found in {destination.name}")
+                    errors.append(f"{name}: anchor #{fragment} not found in {destination.name}")
 
 
 def main():
@@ -125,7 +157,7 @@ def main():
     # Search Console verification files (google<token>.html) must stay exactly
     # as Google issued them, so they are not pages and are not checked as such.
     html_files = sorted(
-        path for path in root.glob("*.html")
+        path for path in [*root.glob("*.html"), *root.glob("ko/*.html")]
         if not re.fullmatch(r"google[0-9a-f]+\.html", path.name)
     )
     if not html_files:
@@ -138,6 +170,7 @@ def main():
         pages[path.resolve()] = check_page(path, errors)
 
     check_links(pages, errors, root)
+    check_translations(pages, errors, root)
 
     css = pathlib.Path("assets/style.css")
     if css.exists():
